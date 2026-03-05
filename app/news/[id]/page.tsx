@@ -30,7 +30,7 @@ async function getDomainName(mode: "subdomain" | "full" = "subdomain"): Promise<
         /^\[?[a-fA-F0-9:]+\]?$/.test(host)
 
     if (IS_LOCAL || IS_IP) {
-        return mode === "full" ? host : "test" // Default to 'test' as per user request
+        return mode === "full" ? host : "statenews.ai" // Default to 'test' as per user request
     }
 
     if (mode === "full") {
@@ -49,7 +49,7 @@ async function getNewsData(id: string, domainName: string): Promise<{ videos: Ne
         const fullDomain = await getDomainName("full")
         const formData = new FormData()
         formData.append("page_no", "0")
-        formData.append("domain_name", domainName)
+        formData.append("domain_name", 'statenews.ai')
         formData.append("video_id", id)
 
         const res = await fetch(`${process.env.API_URL}/newsVideoWatch`, {
@@ -83,6 +83,9 @@ async function getNewsData(id: string, domainName: string): Promise<{ videos: Ne
             domain: fullDomain,
             newsLink: apiVideo.news_link,
             publishDate: apiVideo.publish_date,
+            city_name: apiVideo.city_name,
+            state_name: apiVideo.state_name,
+            categoryName: apiVideo.news_category_name,
         }))
 
         return { videos, settings }

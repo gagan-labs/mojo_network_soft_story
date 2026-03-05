@@ -17,6 +17,9 @@ export interface ApiNewsVideo {
     reporter_name: string
     channel_name: string
     news_link: string
+    city_name: string
+    state_name: string
+    news_category_name: string
 }
 
 export interface PortalSettings {
@@ -37,4 +40,7 @@ export interface NewsVideo {
     domain: string
     newsLink: string
     publishDate: string
+    city_name: string
+    state_name: string
+    categoryName: string
 }

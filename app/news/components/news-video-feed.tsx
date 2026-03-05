@@ -43,7 +43,7 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
         try {
             const formData = new FormData()
             formData.append("page_no", (currentPage + 1).toString())
-            formData.append("domain_name", domainName)
+            formData.append("domain_name", 'statenews.ai')
             formData.append("video_id", "") // blank id for pagination
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/newsVideoWatch`, {
@@ -79,6 +79,9 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
                         domain: domainName,
                         newsLink: apiVideo.news_link,
                         publishDate: apiVideo.publish_date,
+                        city_name: apiVideo.city_name,
+                        state_name: apiVideo.state_name,
+                        categoryName: apiVideo.news_category_name,
                     }))
 
                 if (newVideos.length === 0) {
@@ -180,9 +183,12 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
     }, [initialVideos, initialId])
 
     return (
-        <div className="relative h-[100dvh] w-full bg-[#f3f3f3] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 h-[100dvh] w-full bg-[#f3f3f3] flex flex-col overflow-hidden z-50">
             {/* Top Header - Inshorts Style */}
-            <header className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-50">
+            <header
+                className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-50"
+                style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
+            >
                 <button onClick={() => window.location.href = '/'} className="flex items-center gap-1 text-gray-600">
                     <ChevronLeft size={20} />
                     <span className="text-sm font-medium uppercase tracking-wider">Back</span>
@@ -200,13 +206,12 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
                             {settings?.channel_name || "My Feed"}
                         </span>
                     </div>
-                    <div className="h-0.5 w-8 bg-blue-500 rounded-full mt-0.5" />
                 </div>
             </header>
 
             <div
                 ref={containerRef}
-                className="flex-grow w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
+                className="flex-grow w-full overflow-y-scroll snap-y snap-mandatory overscroll-y-none touch-pan-y no-scrollbar scroll-smooth will-change-scroll"
             >
                 {videos.map((video, index) => (
                     <div
@@ -216,10 +221,10 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
                     >
                         {/* Logo Overlay - Now inside the card context but floating */}
                         {settings?.portal_logo && (
-                            <div className="absolute top-6 right-6 md:top-8 md:right-[calc(50%-230px)] z-50 pointer-events-none transition-opacity">
+                            <div className="absolute top-2 right-4 md:top-8 md:right-[calc(50%-230px)] z-50 pointer-events-none transition-opacity">
                                 <img
                                     src={settings.portal_logo}
-                                    alt="Portal Logo"
+                                    alt={settings?.channel_name}
                                     className="h-7 w-auto object-contain filter drop-shadow-sm"
                                 />
                             </div>

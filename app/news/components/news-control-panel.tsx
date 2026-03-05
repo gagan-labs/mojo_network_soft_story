@@ -6,37 +6,24 @@ import type { NewsVideo } from "../types"
 
 interface NewsControlPanelProps {
     video: NewsVideo
-    layout?: "vertical" | "horizontal"
 }
 
-export function NewsControlPanel({ video, layout = "vertical" }: NewsControlPanelProps) {
+export function NewsControlPanel({ video }: NewsControlPanelProps) {
     const handleReadNews = () => {
         window.open(video.newsLink, "_blank", "noopener,noreferrer")
     }
 
-    const containerClasses = layout === "horizontal"
-        ? "flex items-center gap-5"
-        : "flex flex-col items-center gap-4"
-
-    const buttonClasses = "flex flex-col items-center gap-1.5 group transition-all"
-    const iconWrapperClasses = layout === "horizontal"
-        ? "p-2 rounded-full bg-gray-50 text-gray-500 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm border border-gray-100"
-        : "p-2.5 rounded-full bg-black/20 text-white group-hover:bg-blue-600 transition-all backdrop-blur-sm"
+    const containerClasses = "flex items-center gap-4 py-1"
+    const buttonClasses = "flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50/50 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all shadow-sm border border-red-100/50 group"
+    const iconWrapperClasses = "text-red-400 group-hover:text-red-600 transition-colors"
 
     return (
         <div className={containerClasses}>
-            <button onClick={handleReadNews} className={buttonClasses} aria-label="Read news article">
-                <div className={iconWrapperClasses}>
-                    <BookOpen size={20} strokeWidth={1.5} />
-                </div>
-                {layout === "vertical" && <span className="text-[11px] font-bold tracking-tight">Read</span>}
-            </button>
-
             <div className={buttonClasses}>
                 <div className={iconWrapperClasses}>
-                    <ShareButton video={video as any} customIcon={<Forward size={20} strokeWidth={1.5} />} />
+                    <ShareButton video={video as any} customIcon={<Forward size={18} strokeWidth={2} />} />
                 </div>
-                {layout === "vertical" && <span className="text-[11px] font-bold tracking-tight">Share</span>}
+                <span className="text-[12px] font-bold tracking-tight">Share</span>
             </div>
         </div>
     )

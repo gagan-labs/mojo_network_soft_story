@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Play, Loader2, Heart, ArrowLeft, User, Clock, Volume2, VolumeX } from "lucide-react"
+import { Play, Loader2, Heart, ArrowLeft, User, Clock, Volume2, VolumeX, BookOpen } from "lucide-react"
 import { DoubleTap } from "../../watch/components/double-tap"
 import { TimelineBar } from "../../watch/components/timeline-bar"
 import { NewsControlPanel } from "./news-control-panel"
@@ -13,6 +13,7 @@ interface NewsVideoPlayerProps {
 }
 
 export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
+    console.log("Video Data", video)
     const videoRef = useRef<HTMLVideoElement>(null)
     const wasPlayingRef = useRef(false)
 
@@ -137,6 +138,10 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
 
     const toggleDescription = () => setIsDescriptionExpanded(!isDescriptionExpanded)
 
+    const handleReadNews = () => {
+        window.open(video.newsLink, "_blank", "noopener,noreferrer")
+    }
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
         return date.toLocaleDateString("en-US", {
@@ -147,16 +152,10 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
     }
 
     return (
-        <div className="relative w-full h-full bg-white flex flex-col">
-            {/* Back Button - Positioned over video */}
-            {/* <button
-                onClick={handleClose}
-                className="absolute top-4 left-4 z-50 p-2 rounded-full bg-black/20 backdrop-blur-sm text-white hover:bg-black/40 transition-colors"
-                aria-label="Back"
-            >
-                <ArrowLeft size={20} />
-            </button> */}
-
+        <div
+            className="relative w-full h-full bg-white flex flex-col"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}
+        >
             {/* Top Segment: Video Player */}
             <div
                 className="relative w-full aspect-video md:aspect-[16/10] bg-black flex-shrink-0 overflow-hidden cursor-pointer"
@@ -216,22 +215,28 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
             </div>
 
             {/* Bottom Segment: News Content */}
-            <div className="flex-grow flex flex-col px-5 py-6 overflow-hidden relative">
-                <div className="flex-grow overflow-y-auto no-scrollbar pt-4">
-                    <div className="flex items-center justify-between mb-4">
+            <div className="flex-grow flex flex-col px-5 pb-6 pt-2 overflow-hidden relative">
+                <div className="flex-grow overflow-y-hidden no-scrollbar pt-4 pb-20">
+                    <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                <User size={14} />
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                <User size={18} />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-400 font-medium">Article by</span>
-                                <span className="text-[11px] text-gray-700 font-bold leading-none">{video.reporterName}</span>
+                                <span className="text-[13px] text-gray-700 font-bold leading-none">{video.reporterName}</span>
+                                <span className="text-[11px] text-gray-400 font-medium">{video.city_name}{video.city_name && ', '} {video.state_name}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-1 text-gray-400">
                             <Clock size={12} strokeWidth={1.5} />
                             <span className="text-[11px] font-medium">{formatDate(video.publishDate)}</span>
                         </div>
+                    </div>
+
+                    <div className="mb-2">
+                        <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider border border-blue-100/50">
+                            {video.categoryName}
+                        </span>
                     </div>
 
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mb-4 tracking-tight">
@@ -245,8 +250,20 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                     </div>
                 </div>
 
+                {/* Persistent Floating "Read Full" Overlay - Pinned above footer */}
+                {!isDescriptionExpanded && (
+                    <div className="absolute bottom-[80px] left-0 right-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none flex items-end justify-center pb-6 z-20">
+                        <button
+                            onClick={handleReadNews}
+                            className="pointer-events-auto text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 transition-all flex items-center gap-2 px-8 py-2.5 rounded-full shadow-lg shadow-red-200 border border-red-500/20 active:scale-95 transform translate-y-2"
+                        >
+                            <BookOpen size={18} strokeWidth={2} /> Read Full Article
+                        </button>
+                    </div>
+                )}
+
                 {/* New Ergonomic Footer */}
-                <footer className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                <footer className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between bg-white z-30">
                     <div className="flex flex-col">
                         <span className="text-[11px] text-gray-400 font-medium italic">
                             swipe up for more
@@ -259,7 +276,6 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                     <div className="flex items-center gap-2">
                         <NewsControlPanel
                             video={video}
-                            layout="horizontal"
                         />
                     </div>
                 </footer>
