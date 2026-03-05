@@ -43,7 +43,7 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
         try {
             const formData = new FormData()
             formData.append("page_no", (currentPage + 1).toString())
-            formData.append("domain_name", 'statenews.ai')
+            formData.append("domain_name", domainName)
             formData.append("video_id", "") // blank id for pagination
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/newsVideoWatch`, {

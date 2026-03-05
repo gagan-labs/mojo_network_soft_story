@@ -49,7 +49,7 @@ async function getNewsData(id: string, domainName: string): Promise<{ videos: Ne
         const fullDomain = await getDomainName("full")
         const formData = new FormData()
         formData.append("page_no", "0")
-        formData.append("domain_name", 'statenews.ai')
+        formData.append("domain_name", domainName)
         formData.append("video_id", id)
 
         const res = await fetch(`${process.env.API_URL}/newsVideoWatch`, {
