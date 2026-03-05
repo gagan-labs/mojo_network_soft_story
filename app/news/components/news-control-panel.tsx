@@ -19,12 +19,18 @@ export function NewsControlPanel({ video }: NewsControlPanelProps) {
 
     return (
         <div className={containerClasses}>
-            <div className={buttonClasses}>
-                <div className={iconWrapperClasses}>
-                    <ShareButton video={video as any} customIcon={<Forward size={18} strokeWidth={2} />} />
-                </div>
-                <span className="text-[12px] font-bold tracking-tight">Share</span>
-            </div>
+            <ShareButton
+                video={video as any}
+                className={buttonClasses}
+                customIcon={
+                    <>
+                        <div className={iconWrapperClasses}>
+                            <Forward size={18} strokeWidth={2} />
+                        </div>
+                        <span className="text-[12px] font-bold tracking-tight">Share</span>
+                    </>
+                }
+            />
         </div>
     )
 }
