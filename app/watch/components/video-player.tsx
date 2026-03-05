@@ -24,8 +24,31 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   useEffect(() => {
-    if (isActive) {
-      videoRef.current?.play().catch(() => setIsPlaying(false))
+    if (isActive && videoRef.current && video.src) {
+      const playPromise = videoRef.current.play()
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          if (error.name === "AbortError") {
+            // Ignore interruption errors
+          } else if (error.name === "NotAllowedError") {
+            // Browser blocked unmuted autoplay. Fallback to muted autoplay.
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              setIsMuted(true);
+              videoRef.current.play().catch((fallbackError) => {
+                console.error("Playback error after muting fallback:", fallbackError)
+                setIsPlaying(false)
+              })
+            }
+          } else if (error.name === "NotSupportedError") {
+            console.error("Video format not supported or source invalid:", video.src)
+            setIsPlaying(false)
+          } else {
+            console.error("Playback error:", error)
+            setIsPlaying(false)
+          }
+        })
+      }
     } else {
       videoRef.current?.pause()
       if (videoRef.current) {

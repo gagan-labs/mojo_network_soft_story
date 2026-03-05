@@ -117,12 +117,23 @@ export function NewsVideoPlayer({ video, isActive, shouldPreload = false }: News
         const video = videoRef.current
         if (!video) return
 
-        if (isActive) {
+        if (isActive && video.src) {
             const playPromise = video.play()
             if (playPromise !== undefined) {
                 playPromise.catch((error) => {
                     if (error.name === "AbortError") {
                         // Ignore interruption errors during fast scrolling
+                    } else if (error.name === "NotAllowedError") {
+                        // Browser blocked unmuted autoplay. Fallback to muted autoplay.
+                        video.muted = true;
+                        setIsMuted(true);
+                        video.play().catch((fallbackError) => {
+                            console.error("Playback error after muting fallback:", fallbackError)
+                            setIsPlaying(false)
+                        })
+                    } else if (error.name === "NotSupportedError") {
+                        console.error("Video format not supported or source invalid:", video.src)
+                        setIsPlaying(false)
                     } else {
                         console.error("Playback error:", error)
                         setIsPlaying(false)
