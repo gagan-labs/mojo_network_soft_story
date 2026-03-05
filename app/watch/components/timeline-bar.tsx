@@ -92,33 +92,36 @@ export function TimelineBar({ progress, duration, onSeek, onSeekStart, onSeekEnd
   }
 
   return (
-    <div className="w-full flex items-center gap-2 group">
+    <div className="w-full flex items-center gap-2.5 group">
+      <span className="text-[11px] font-mono font-medium text-white text-shadow drop-shadow-sm min-w-[36px] text-right tracking-tight">
+        {formatTime(progress * duration)}
+      </span>
       <div
         ref={timelineContainerRef}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onMouseMove={handleHover}
         onMouseLeave={handleMouseLeave}
-        className="relative w-full cursor-pointer py-2"
+        className="relative flex-grow cursor-pointer py-2"
       >
-        <div className="relative w-full h-1 bg-white/30 rounded-full">
+        <div className="relative w-full h-1.5 bg-white/30 rounded-full">
           <div className="absolute top-0 left-0 h-full bg-white rounded-full" style={{ width: `${progress * 100}%` }} />
           <div
-            className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-white shadow-md transform opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ left: `calc(${progress * 100}% - 6px)` }}
+            className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-white shadow-md transform opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ left: `calc(${progress * 100}% - 8px)` }}
           />
         </div>
         {hoverTime !== null && !isSeeking && (
           <div
-            className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded"
+            className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded shadow-lg"
             style={{ left: `${hoverPosition}px`, transform: "translateX(-50%)" }}
           >
             {formatTime(hoverTime)}
           </div>
         )}
       </div>
-      <span className="text-xs font-mono text-shadow opacity-0 group-hover:opacity-100 transition-opacity">
-        {formatTime(progress * duration)}
+      <span className="text-[11px] font-mono font-medium text-white/90 text-shadow drop-shadow-sm min-w-[36px] tracking-tight">
+        {formatTime(duration)}
       </span>
     </div>
   )
