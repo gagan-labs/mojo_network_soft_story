@@ -10,40 +10,139 @@ import type { NewsVideo } from "../types"
 interface NewsVideoPlayerProps {
     video: NewsVideo
     isActive: boolean
+    shouldPreload?: boolean
 }
 
-export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
-    console.log("Video Data", video)
+export function NewsVideoPlayer({ video, isActive, shouldPreload = false }: NewsVideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const wasPlayingRef = useRef(false)
 
     const [isPlaying, setIsPlaying] = useState(false)
     const [isMuted, setIsMuted] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [shouldShowSpinner, setShouldShowSpinner] = useState(false)
     const [progress, setProgress] = useState(0)
     const [duration, setDuration] = useState(0)
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
     const [showControls, setShowControls] = useState(true)
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+    const resetControlsTimeout = useCallback(() => {
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+        controlsTimeoutRef.current = setTimeout(() => {
+            if (videoRef.current && !videoRef.current.paused) {
+                setShowControls(false)
+            }
+        }, 3000)
+    }, [])
+
+    const togglePlayPause = useCallback(() => {
+        if (videoRef.current?.paused) {
+            videoRef.current?.play().catch(() => { })
+        } else {
+            videoRef.current?.pause()
+        }
+    }, [])
+
+    const toggleMute = useCallback(() => {
+        if (videoRef.current) {
+            videoRef.current.muted = !videoRef.current.muted
+            setIsMuted(videoRef.current.muted)
+        }
+    }, [])
+
+    const handleSeek = useCallback(
+        (newProgress: number) => {
+            if (videoRef.current && isFinite(duration)) {
+                videoRef.current.currentTime = newProgress * duration
+                setProgress(newProgress)
+            }
+        },
+        [duration],
+    )
+
+    const handleSeekStart = useCallback(() => {
+        if (videoRef.current) {
+            wasPlayingRef.current = !videoRef.current.paused
+            videoRef.current.pause()
+        }
+    }, [])
+
+    const handleSeekEnd = useCallback(() => {
+        if (videoRef.current && wasPlayingRef.current) {
+            videoRef.current.play().catch(() => { })
+        }
+        resetControlsTimeout()
+    }, [resetControlsTimeout])
+
+    const handleVideoTap = useCallback(() => {
+        setShowControls((prev) => !prev)
+        if (!showControls) {
+            resetControlsTimeout()
+        } else {
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+        }
+    }, [showControls, resetControlsTimeout])
+
+    const handleClose = () => {
+        window.location.href = window.location.origin;
+    }
+
+    const toggleDescription = () => setIsDescriptionExpanded(!isDescriptionExpanded)
+
+    const handleReadNews = () => {
+        window.open(video.newsLink, "_blank", "noopener,noreferrer")
+    }
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString)
+        return date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        })
+    }
+
     useEffect(() => {
+        let timer: NodeJS.Timeout
+        if (isLoading && isActive) {
+            timer = setTimeout(() => setShouldShowSpinner(true), 500)
+        } else {
+            setShouldShowSpinner(false)
+        }
+        return () => clearTimeout(timer)
+    }, [isLoading, isActive])
+
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) return
+
         if (isActive) {
-            videoRef.current?.play().catch(() => setIsPlaying(false))
+            const playPromise = video.play()
+            if (playPromise !== undefined) {
+                playPromise.catch((error) => {
+                    if (error.name === "AbortError") {
+                        // Ignore interruption errors during fast scrolling
+                    } else {
+                        console.error("Playback error:", error)
+                        setIsPlaying(false)
+                    }
+                })
+            }
             setShowControls(true)
             resetControlsTimeout()
         } else {
-            videoRef.current?.pause()
-            if (videoRef.current) {
-                videoRef.current.currentTime = 0
-                setIsLoading(true)
-                setIsDescriptionExpanded(false)
-            }
+            video.pause()
+            video.currentTime = 0
+            setIsLoading(true)
+            setIsDescriptionExpanded(false)
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
         }
+
         return () => {
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
         }
-    }, [isActive])
+    }, [isActive, resetControlsTimeout])
 
     useEffect(() => {
         const videoElement = videoRef.current
@@ -78,79 +177,6 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
         }
     }, [])
 
-    const togglePlayPause = useCallback(() => {
-        if (videoRef.current?.paused) videoRef.current?.play()
-        else videoRef.current?.pause()
-    }, [])
-
-    const toggleMute = useCallback(() => {
-        if (videoRef.current) {
-            videoRef.current.muted = !videoRef.current.muted
-            setIsMuted(videoRef.current.muted)
-        }
-    }, [])
-
-    const handleSeek = useCallback(
-        (newProgress: number) => {
-            if (videoRef.current && isFinite(duration)) {
-                videoRef.current.currentTime = newProgress * duration
-                setProgress(newProgress)
-            }
-        },
-        [duration],
-    )
-
-    const handleSeekStart = useCallback(() => {
-        if (videoRef.current) {
-            wasPlayingRef.current = !videoRef.current.paused
-            videoRef.current.pause()
-        }
-    }, [])
-
-    const handleSeekEnd = useCallback(() => {
-        if (videoRef.current && wasPlayingRef.current) {
-            videoRef.current.play()
-        }
-        resetControlsTimeout()
-    }, [])
-
-    const resetControlsTimeout = useCallback(() => {
-        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-        controlsTimeoutRef.current = setTimeout(() => {
-            if (videoRef.current && !videoRef.current.paused) {
-                setShowControls(false)
-            }
-        }, 3000)
-    }, [])
-
-    const handleVideoTap = useCallback(() => {
-        setShowControls((prev) => !prev)
-        if (!showControls) {
-            resetControlsTimeout()
-        } else {
-            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-        }
-    }, [showControls, resetControlsTimeout])
-
-    const handleClose = () => {
-        window.location.href = window.location.origin;
-    }
-
-    const toggleDescription = () => setIsDescriptionExpanded(!isDescriptionExpanded)
-
-    const handleReadNews = () => {
-        window.open(video.newsLink, "_blank", "noopener,noreferrer")
-    }
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        })
-    }
-
     return (
         <div
             className="relative w-full h-full bg-white flex flex-col"
@@ -169,14 +195,14 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                         loop
                         playsInline
                         muted={isMuted}
-                        preload="metadata"
+                        preload={isActive || shouldPreload ? "auto" : "metadata"}
                         poster={video.thumbnail}
                     />
                 </DoubleTap>
 
                 {/* Video Overlay Controls (Play/Pause/Loading) */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    {isLoading && (
+                    {shouldShowSpinner && (
                         <div className="bg-black/30 backdrop-blur-sm p-4 rounded-full">
                             <Loader2 className="w-8 h-8 text-white animate-spin" />
                         </div>
@@ -239,7 +265,7 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                         </span>
                     </div>
 
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mb-4 tracking-tight">
+                    <h1 className="text-[18px] md:text-2xl font-bold text-gray-900 leading-tight mb-2 tracking-tight">
                         {video.title}
                     </h1>
 

@@ -147,7 +147,7 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
                             window.history.replaceState(null, "", `${basePath}/news/${video.id}`)
                         }
 
-                        if (index >= videos.length - 2 && hasMoreVideos && !isLoadingRef.current) {
+                        if (index >= videos.length - 5 && hasMoreVideos && !isLoadingRef.current) {
                             loadMoreVideos()
                         }
                     }
@@ -191,7 +191,7 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
             >
                 <button onClick={() => window.location.href = '/'} className="flex items-center gap-1 text-gray-600">
                     <ChevronLeft size={20} />
-                    <span className="text-sm font-medium uppercase tracking-wider">Back</span>
+                    <span className="text-sm font-medium uppercase tracking-wider"></span>
                 </button>
                 <div className="flex flex-col items-center">
                     <div className="flex items-center gap-1.5">
@@ -231,7 +231,11 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
                         )}
 
                         <div className="relative h-full w-full md:w-[480px] md:h-[calc(100vh-100px)] md:rounded-xl overflow-hidden md:shadow-xl bg-white">
-                            <NewsVideoPlayer video={video} isActive={index === activeIndex} />
+                            <NewsVideoPlayer
+                                video={video}
+                                isActive={index === activeIndex}
+                                shouldPreload={index > activeIndex && index <= activeIndex + 2}
+                            />
 
                             {index === activeIndex && isLoadingMore && (
                                 <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40">
