@@ -6,13 +6,17 @@ import type { Video } from "../types"
 
 interface ShareButtonProps {
   video: Video
+  customIcon?: React.ReactNode
+  className?: string
+  iconSize?: number
 }
 
-export function ShareButton({ video }: ShareButtonProps) {
+export function ShareButton({ video, customIcon, className, iconSize = 26 }: ShareButtonProps) {
   const [copied, setCopied] = useState(false)
 
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/soft-stories/watch/${video.slug}`
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const shareUrl = window.location.href
     const shareData = {
       title: `Check out this story: ${video.title}`,
       text: `Watch "${video.title}" from ${video.channelName}`,
@@ -33,15 +37,16 @@ export function ShareButton({ video }: ShareButtonProps) {
   }
 
   return (
-    <button
+    <div
       onClick={handleShare}
-      className="flex flex-col items-center gap-1 text-white group"
+      className={`cursor-pointer ${className}`}
       aria-label="Share video"
     >
-      <div className="p-2.5 rounded-full group-hover:bg-green-500 transition-colors">
-        {copied ? <span className="text-xs">Copied!</span> : <Share2 size={26} className="icon-shadow" />}
-      </div>
-      <span className="text-[11px] font-semibold text-shadow">Share</span>
-    </button>
+      {copied ? (
+        <span className="text-[10px] font-bold">Copied!</span>
+      ) : (
+        customIcon || <Share2 size={iconSize} className="icon-shadow" />
+      )}
+    </div>
   )
 }

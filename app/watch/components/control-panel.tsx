@@ -25,7 +25,12 @@ export function ControlPanel({ video, isMuted, onMuteToggle }: ControlPanelProps
         </div>
         <span className="text-[11px] font-semibold text-shadow">3,456</span>
       </button>
-      <ShareButton video={video} />
+      <button className="flex flex-col items-center gap-1 text-white group" aria-label="Share video">
+        <div className="p-2.5 rounded-full group-hover:bg-green-500 transition-colors">
+          <ShareButton video={video} iconSize={26} className="icon-shadow" />
+        </div>
+        <span className="text-[11px] font-semibold text-shadow">Share</span>
+      </button>
       <button onClick={onMuteToggle} className="flex flex-col items-center gap-1 text-white group mt-2">
         <div className="p-2.5 rounded-full transition-colors">
           {isMuted ? <VolumeX size={26} className="icon-shadow" /> : <Volume2 size={26} className="icon-shadow" />}
