@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Play, Loader2, Heart, ArrowLeft, User, Clock } from "lucide-react"
+import { Play, Loader2, Heart, ArrowLeft, User, Clock, Volume2, VolumeX } from "lucide-react"
 import { DoubleTap } from "../../watch/components/double-tap"
 import { TimelineBar } from "../../watch/components/timeline-bar"
 import { NewsControlPanel } from "./news-control-panel"
@@ -22,10 +22,14 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
     const [progress, setProgress] = useState(0)
     const [duration, setDuration] = useState(0)
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
+    const [showControls, setShowControls] = useState(true)
+    const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         if (isActive) {
             videoRef.current?.play().catch(() => setIsPlaying(false))
+            setShowControls(true)
+            resetControlsTimeout()
         } else {
             videoRef.current?.pause()
             if (videoRef.current) {
@@ -33,6 +37,10 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                 setIsLoading(true)
                 setIsDescriptionExpanded(false)
             }
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+        }
+        return () => {
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
         }
     }, [isActive])
 
@@ -56,6 +64,7 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
         videoElement.addEventListener("waiting", handleWaiting)
         videoElement.addEventListener("canplaythrough", handleCanPlayThrough)
 
+        if (videoElement.readyState >= 1) setDuration(videoElement.duration)
         if (videoElement.readyState >= 3) setIsLoading(false)
 
         return () => {
@@ -101,7 +110,26 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
         if (videoRef.current && wasPlayingRef.current) {
             videoRef.current.play()
         }
+        resetControlsTimeout()
     }, [])
+
+    const resetControlsTimeout = useCallback(() => {
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+        controlsTimeoutRef.current = setTimeout(() => {
+            if (videoRef.current && !videoRef.current.paused) {
+                setShowControls(false)
+            }
+        }, 3000)
+    }, [])
+
+    const handleVideoTap = useCallback(() => {
+        setShowControls((prev) => !prev)
+        if (!showControls) {
+            resetControlsTimeout()
+        } else {
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+        }
+    }, [showControls, resetControlsTimeout])
 
     const handleClose = () => {
         window.location.href = window.location.origin;
@@ -130,8 +158,11 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
             </button> */}
 
             {/* Top Segment: Video Player */}
-            <div className="relative w-full aspect-video md:aspect-[16/10] bg-black flex-shrink-0 overflow-hidden">
-                <DoubleTap onDoubleTap={togglePlayPause}>
+            <div
+                className="relative w-full aspect-video md:aspect-[16/10] bg-black flex-shrink-0 overflow-hidden cursor-pointer"
+                onClick={handleVideoTap}
+            >
+                <DoubleTap onDoubleTap={() => togglePlayPause()}>
                     <video
                         ref={videoRef}
                         src={video.src}
@@ -144,7 +175,7 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                     />
                 </DoubleTap>
 
-                {/* Video Overlay Controls */}
+                {/* Video Overlay Controls (Play/Pause/Loading) */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     {isLoading && (
                         <div className="bg-black/30 backdrop-blur-sm p-4 rounded-full">
@@ -158,15 +189,29 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                     )}
                 </div>
 
-                {/* Video Progress Bar - Moved up to avoid overlap with floating channel tag */}
-                <div className="absolute bottom-2 left-0 right-0 z-40 px-3">
-                    <TimelineBar
-                        progress={progress}
-                        duration={duration}
-                        onSeek={handleSeek}
-                        onSeekStart={handleSeekStart}
-                        onSeekEnd={handleSeekEnd}
-                    />
+                {/* Video Controls Overlay (Timeline + Mute) */}
+                <div
+                    className={`absolute bottom-0 left-0 right-0 z-40 p-4 pt-10 bg-gradient-to-t from-black/60 to-transparent transition-opacity duration-300 flex items-end justify-between ${showControls ? 'opacity-100' : 'opacity-0 select-none pointer-events-none'}`}
+                    onClick={(e) => e.stopPropagation()} // Prevent tap from bubbling up and hiding controls immediately
+                >
+                    <div className="flex-grow pr-4">
+                        <TimelineBar
+                            progress={progress}
+                            duration={duration}
+                            onSeek={(p) => { handleSeek(p); resetControlsTimeout(); }}
+                            onSeekStart={handleSeekStart}
+                            onSeekEnd={handleSeekEnd}
+                        />
+                    </div>
+
+                    {/* Relocated Mute Button */}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); toggleMute(); resetControlsTimeout(); }}
+                        className="p-1 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors flex-shrink-0"
+                        aria-label={isMuted ? "Unmute" : "Mute"}
+                    >
+                        {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                    </button>
                 </div>
             </div>
 
@@ -214,8 +259,6 @@ export function NewsVideoPlayer({ video, isActive }: NewsVideoPlayerProps) {
                     <div className="flex items-center gap-2">
                         <NewsControlPanel
                             video={video}
-                            isMuted={isMuted}
-                            onMuteToggle={toggleMute}
                             layout="horizontal"
                         />
                     </div>
