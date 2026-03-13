@@ -19,9 +19,20 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [shouldShowSpinner, setShouldShowSpinner] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (isLoading && isActive) {
+      timer = setTimeout(() => setShouldShowSpinner(true), 500)
+    } else {
+      setShouldShowSpinner(false)
+    }
+    return () => clearTimeout(timer)
+  }, [isLoading, isActive])
 
   useEffect(() => {
     if (isActive && videoRef.current && video.src) {
@@ -57,7 +68,7 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
         setIsDescriptionExpanded(false)
       }
     }
-  }, [isActive])
+  }, [isActive, video.src])
 
   useEffect(() => {
     const videoElement = videoRef.current
@@ -150,14 +161,17 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
           src={video.src}
           className="w-full h-full object-contain"
           loop
+          autoPlay
           playsInline
+          /* @ts-ignore */
+          webkit-playsinline="true"
           muted={isMuted}
-          preload="metadata"
+          preload={isActive ? "auto" : "metadata"}
         />
       </DoubleTap>
 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {isLoading && (
+        {shouldShowSpinner && (
           <div className="bg-black/50 p-4 rounded-full">
             <Loader2 className="w-10 h-10 text-white animate-spin" />
           </div>
