@@ -219,17 +219,6 @@ export function NewsVideoFeed({ videos: initialVideos, initialId, domainName, se
                         data-index={index}
                         className="video-container h-full w-full snap-start snap-always flex items-center justify-center relative md:py-4"
                     >
-                        {/* Logo Overlay - Now inside the card context but floating */}
-                        {settings?.portal_logo && (
-                            <div className="absolute top-2 right-4 md:top-8 md:right-[calc(50%-230px)] z-50 pointer-events-none transition-opacity">
-                                <img
-                                    src={settings.portal_logo}
-                                    alt={settings?.channel_name}
-                                    className="h-7 w-auto object-contain filter drop-shadow-sm"
-                                />
-                            </div>
-                        )}
-
                         <div className="relative h-full w-full md:w-[480px] md:h-[calc(100vh-100px)] md:rounded-xl overflow-hidden md:shadow-xl bg-white">
                             <NewsVideoPlayer
                                 video={video}
