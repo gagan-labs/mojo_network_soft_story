@@ -17,7 +17,7 @@ async function getDomainName(mode: "subdomain" | "full" = "subdomain"): Promise<
     /^\[?[a-fA-F0-9:]+\]?$/.test(host)
 
   if (IS_LOCAL || IS_IP) {
-    return mode === "full" ? host : "pannanews.com"
+    return mode === "full" ? host : "digitaldesknews.com"
   }
 
   if (mode === "full") {

@@ -12,117 +12,120 @@ interface TimelineBarProps {
 }
 
 export function TimelineBar({ progress, duration, onSeek, onSeekStart, onSeekEnd }: TimelineBarProps) {
-  const timelineContainerRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
   const [isSeeking, setIsSeeking] = useState(false)
-  const [hoverTime, setHoverTime] = useState<number | null>(null)
-  const [hoverPosition, setHoverPosition] = useState(0)
+  const [isHovering, setIsHovering] = useState(false)
+  const [hoverRatio, setHoverRatio] = useState<number | null>(null)
 
   const formatTime = (time: number) => {
-    if (isNaN(time) || time === Number.POSITIVE_INFINITY) return "0:00"
-    const minutes = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+    if (!isFinite(time) || isNaN(time)) return "0:00"
+    const m = Math.floor(time / 60)
+    const s = Math.floor(time % 60)
+    return `${m}:${s.toString().padStart(2, "0")}`
   }
 
-  const handleSeek = useCallback(
+  const getRatioFromClientX = useCallback((clientX: number) => {
+    if (!trackRef.current) return 0
+    const { left, width } = trackRef.current.getBoundingClientRect()
+    return Math.max(0, Math.min(1, (clientX - left) / width))
+  }, [])
+
+  const startSeek = useCallback(
     (clientX: number) => {
-      if (!timelineContainerRef.current) return
-      const rect = timelineContainerRef.current.getBoundingClientRect()
-      const newProgress = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-      onSeek(newProgress)
+      onSeekStart?.()
+      setIsSeeking(true)
+      onSeek(getRatioFromClientX(clientX))
     },
-    [onSeek],
+    [onSeekStart, onSeek, getRatioFromClientX]
   )
 
-  const handleInteractionStart = (clientX: number) => {
-    onSeekStart?.()
-    setIsSeeking(true)
-    handleSeek(clientX)
-  }
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    handleInteractionStart(e.clientX)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    handleInteractionStart(e.touches[0].clientX)
-  }
-
   useEffect(() => {
-    const handleInteractionMove = (clientX: number) => {
-      if (isSeeking) {
-        handleSeek(clientX)
-      }
+    if (!isSeeking) return
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
+      onSeek(getRatioFromClientX(clientX))
     }
-
-    const handleMouseMove = (e: MouseEvent) => handleInteractionMove(e.clientX)
-    const handleTouchMove = (e: TouchEvent) => handleInteractionMove(e.touches[0].clientX)
-
-    const handleInteractionEnd = () => {
+    const onEnd = () => {
       setIsSeeking(false)
       onSeekEnd?.()
     }
-
-    if (isSeeking) {
-      document.addEventListener("mousemove", handleMouseMove)
-      document.addEventListener("mouseup", handleInteractionEnd)
-      document.addEventListener("touchmove", handleTouchMove)
-      document.addEventListener("touchend", handleInteractionEnd)
-    }
-
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", onEnd)
+    window.addEventListener("touchmove", onMove)
+    window.addEventListener("touchend", onEnd)
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleInteractionEnd)
-      document.removeEventListener("touchmove", handleTouchMove)
-      document.removeEventListener("touchend", handleInteractionEnd)
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", onEnd)
+      window.removeEventListener("touchmove", onMove)
+      window.removeEventListener("touchend", onEnd)
     }
-  }, [isSeeking, handleSeek, onSeekEnd])
+  }, [isSeeking, onSeek, onSeekEnd, getRatioFromClientX])
 
-  const handleHover = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!timelineContainerRef.current) return
-    const rect = timelineContainerRef.current.getBoundingClientRect()
-    const hoverProgress = (e.clientX - rect.left) / rect.width
-    setHoverTime(hoverProgress * duration)
-    setHoverPosition(e.clientX - rect.left)
-  }
-
-  const handleMouseLeave = () => {
-    setHoverTime(null)
-  }
+  const active = isHovering || isSeeking
+  const trackHeight = active ? 4 : 2
+  const thumbSize = active ? 14 : 0
 
   return (
-    <div className="w-full flex items-center gap-2.5 group">
-      <span className="text-[11px] font-mono font-medium text-white text-shadow drop-shadow-sm min-w-[36px] text-right tracking-tight">
-        {formatTime(progress * duration)}
-      </span>
+    <div className="relative w-full select-none">
+      {/* Time tooltip on hover */}
+      {hoverRatio !== null && active && (
+        <div
+          className="absolute -top-7 px-1.5 py-0.5 rounded bg-black/80 text-white text-[10px] font-mono pointer-events-none"
+          style={{
+            left: `${hoverRatio * 100}%`,
+            transform: "translateX(-50%)",
+            zIndex: 60,
+          }}
+        >
+          {formatTime(hoverRatio * duration)}
+        </div>
+      )}
+
+
+
+      {/* Track — edge-to-edge, no horizontal padding */}
       <div
-        ref={timelineContainerRef}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onMouseMove={handleHover}
-        onMouseLeave={handleMouseLeave}
-        className="relative flex-grow cursor-pointer py-2"
+        ref={trackRef}
+        className="w-full relative cursor-pointer"
+        style={{
+          height: "28px",          // large hit target
+          display: "flex",
+          alignItems: "flex-end",  // bar sits at the bottom edge
+          touchAction: "none",
+        }}
+        onMouseDown={(e) => { e.preventDefault(); startSeek(e.clientX) }}
+        onTouchStart={(e) => startSeek(e.touches[0].clientX)}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => { setIsHovering(false); setHoverRatio(null) }}
+        onMouseMove={(e) => setHoverRatio(getRatioFromClientX(e.clientX))}
       >
-        <div className="relative w-full h-1.5 bg-white/30 rounded-full">
-          <div className="absolute top-0 left-0 h-full bg-white rounded-full" style={{ width: `${progress * 100}%` }} />
+        {/* Background track */}
+        <div
+          className="w-full rounded-none relative overflow-visible transition-all duration-150"
+          style={{ height: `${trackHeight}px`, backgroundColor: "rgba(255,255,255,0.25)" }}
+        >
+          {/* Progress fill */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-white shadow-md transform opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ left: `calc(${progress * 100}% - 8px)` }}
+            className="absolute left-0 top-0 h-full rounded-none"
+            style={{
+              width: `${progress * 100}%`,
+              background: "linear-gradient(to right, #ff4545, #ff7b54)",
+            }}
+          />
+
+          {/* Thumb knob */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg transition-all duration-150"
+            style={{
+              width: thumbSize,
+              height: thumbSize,
+              left: `calc(${progress * 100}% - ${thumbSize / 2}px)`,
+              opacity: active ? 1 : 0,
+              boxShadow: active ? "0 0 0 3px rgba(255,69,69,0.35)" : "none",
+            }}
           />
         </div>
-        {hoverTime !== null && !isSeeking && (
-          <div
-            className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded shadow-lg"
-            style={{ left: `${hoverPosition}px`, transform: "translateX(-50%)" }}
-          >
-            {formatTime(hoverTime)}
-          </div>
-        )}
       </div>
-      <span className="text-[11px] font-mono font-medium text-white/90 text-shadow drop-shadow-sm min-w-[36px] tracking-tight">
-        {formatTime(duration)}
-      </span>
     </div>
   )
 }
