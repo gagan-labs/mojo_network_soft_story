@@ -1,18 +1,20 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Play, Loader2, Heart, ArrowBigDown, SkipBack, StepBack, Cross, X, ArrowLeft } from "lucide-react"
+import { Play, Loader2, ArrowLeft, Volume2, VolumeX, ChevronDown, Maximize, Minimize } from "lucide-react"
 import { DoubleTap } from "./double-tap"
 import { TimelineBar } from "./timeline-bar"
-import { ControlPanel } from "./control-panel"
+import { ShareButton } from "./share-button"
 import type { Video } from "../types"
 
 interface VideoPlayerProps {
   video: Video
   isActive: boolean
+  isUiHidden: boolean
+  onToggleUiHidden: () => void
 }
 
-export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
+export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const wasPlayingRef = useRef(false)
 
@@ -40,12 +42,10 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
       if (playPromise !== undefined) {
         playPromise.catch((error) => {
           if (error.name === "AbortError") {
-            // Ignore interruption errors
           } else if (error.name === "NotAllowedError") {
-            // Browser blocked unmuted autoplay. Fallback to muted autoplay.
             if (videoRef.current) {
-              videoRef.current.muted = true;
-              setIsMuted(true);
+              videoRef.current.muted = true
+              setIsMuted(true)
               videoRef.current.play().catch((fallbackError) => {
                 console.error("Playback error after muting fallback:", fallbackError)
                 setIsPlaying(false)
@@ -121,7 +121,7 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
         setProgress(newProgress)
       }
     },
-    [duration],
+    [duration]
   )
 
   const handleSeekStart = useCallback(() => {
@@ -136,25 +136,17 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
       videoRef.current.play()
     }
   }, [])
+
   const handleClose = () => {
-    window.location.href = window.location.origin;
+    window.location.href = window.location.origin
   }
 
-  const toggleDescription = () => setIsDescriptionExpanded(!isDescriptionExpanded)
+  const toggleDescription = () => setIsDescriptionExpanded((prev) => !prev)
 
   return (
-    <div className="relative w-full h-full bg-black">
-      <button
-        onClick={handleClose}
-        className="absolute top-3 left-4 border rounded-3xl flex items-center gap-1 text-slate-200 group ml-auto hover:bg-slate-700 border-slate-200"
-        style={{ zIndex: '9999' }}
-        aria-label="Back"
-      >
-        <div className="py-1 px-2.5 rounded-full  transition-colors flex gap-1 items-center">
-          <ArrowLeft size={16} className="icon-shadow" />
-          <span className="text-[11px] font-semibold text-shadow">Back</span>
-        </div>
-      </button>
+    <div className="relative w-full h-full bg-black overflow-hidden">
+
+      {/* ── VIDEO ── */}
       <DoubleTap onDoubleTap={togglePlayPause}>
         <video
           ref={videoRef}
@@ -170,52 +162,147 @@ export function VideoPlayer({ video, isActive }: VideoPlayerProps) {
         />
       </DoubleTap>
 
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* ── CENTRE INDICATORS (spinner / pause icon) ── */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 10 }}>
         {shouldShowSpinner && (
-          <div className="bg-black/50 p-4 rounded-full">
+          <div className="bg-black/40 p-4 rounded-full backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-white animate-spin" />
           </div>
         )}
         {!isPlaying && !isLoading && (
-          <div className="bg-black/50 p-6 rounded-full">
+          <div className="bg-black/40 p-6 rounded-full backdrop-blur-sm">
             <Play className="w-12 h-12 text-white" fill="white" />
           </div>
         )}
       </div>
 
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black/70 to-transparent" />
+      {/* ── GRADIENT SCRIM (bottom 55%) ── */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 pointer-events-none transition-opacity duration-300 ${isUiHidden ? 'opacity-0' : 'opacity-100'}`}
+        style={{
+          height: "55%",
+          background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, transparent 100%)",
+          zIndex: 20,
+        }}
+      />
+
+      {/* ── TOP BAR: Back button ── */}
+      <div className={`absolute top-0 left-0 right-0 flex items-center px-3 pt-4 transition-opacity duration-300 ${isUiHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ zIndex: 40 }}>
+        <button
+          onClick={handleClose}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/15 text-white active:scale-95 transition-transform"
+          aria-label="Back"
+        >
+          <ArrowLeft size={13} strokeWidth={2.5} />
+          <span className="text-[11px] font-bold tracking-wide">Back</span>
+        </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 text-white flex items-end">
-        <div className="flex-grow min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-bold text-base text-shadow truncate">{video.reporterName}</p>
-            <span className="text-xs text-white/80">•</span>
-            <p className="text-sm font-semibold text-shadow text-green-400">{video.channelName}</p>
+      {/* ── RIGHT SIDEBAR: Actions ── */}
+      <div
+        className="absolute right-3 flex flex-col items-center gap-4"
+        style={{ bottom: "36px", zIndex: 40 }}
+      >
+        <div className={`flex flex-col gap-4 transition-opacity duration-300 ${isUiHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          {/* Mute */}
+          <button
+            onClick={toggleMute}
+            className="flex flex-col items-center gap-1 group"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/15 flex items-center justify-center text-white group-active:scale-95 transition-transform">
+              {isMuted
+                ? <VolumeX size={18} strokeWidth={2} />
+                : <Volume2 size={18} strokeWidth={2} />}
+            </div>
+            <span className="text-[9px] font-semibold text-white/75 tracking-wide uppercase">
+              {isMuted ? "Unmute" : "Sound"}
+            </span>
+          </button>
+
+          {/* Share */}
+          <button
+            className="flex flex-col items-center gap-1 group"
+            aria-label="Share"
+          >
+            <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/15 flex items-center justify-center text-white group-active:scale-95 transition-transform">
+              <ShareButton video={video} iconSize={18} className="" />
+            </div>
+            <span className="text-[9px] font-semibold text-white/75 tracking-wide uppercase">Share</span>
+          </button>
+        </div>
+
+        {/* Clear Mode Toggle */}
+        <button
+          onClick={onToggleUiHidden}
+          className="flex flex-col items-center gap-1 group"
+          aria-label={isUiHidden ? "Show UI" : "Clear UI"}
+        >
+          <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/15 flex items-center justify-center text-white group-active:scale-95 transition-transform">
+            {isUiHidden ? <Minimize size={18} strokeWidth={2} /> : <Maximize size={18} strokeWidth={2} />}
           </div>
-          <p className="text-xs text-white/70 text-shadow">{video.domain}</p>
-          <h3 className="font-semibold text-base text-shadow mt-2 text-balance">{video.title}</h3>
-          <div onClick={toggleDescription} className="cursor-pointer mt-1 pointer-events-auto">
-            <p
-              className={`text-sm text-white/90 text-shadow text-balance ${!isDescriptionExpanded ? "line-clamp-1" : ""}`}
-            >
-              {video.description}
-              {!isDescriptionExpanded && <span className="font-semibold text-white/70 ml-1">...more</span>}
-            </p>
+          <span className={`text-[9px] font-semibold text-white/75 tracking-wide uppercase transition-opacity duration-300 ${isUiHidden ? 'opacity-0' : 'opacity-100'}`}>
+            Clear
+          </span>
+        </button>
+      </div>
+
+      {/* ── BOTTOM INFO PANEL ── */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 flex flex-col transition-opacity duration-300 ${isUiHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{ zIndex: 30 }}
+      >
+        {/* Info content — sits above timeline */}
+        <div className="px-4 pb-0 pr-16">
+          {/* Reporter · Channel row */}
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mb-1.5">
+            <span className="text-white font-bold text-[15px] leading-tight">{video.reporterName}</span>
+            <span className="text-white/40 text-[13px]">·</span>
+            <span className="text-emerald-400 font-semibold text-[14px] leading-tight">{video.channelName}</span>
           </div>
-          <div className="mt-2">
-            <TimelineBar
-              progress={progress}
-              duration={duration}
-              onSeek={handleSeek}
-              onSeekStart={handleSeekStart}
-              onSeekEnd={handleSeekEnd}
-            />
+
+          {/* ─ Title (1 line collapsed, full when expanded) ─ */}
+          <h3
+            className={`text-white font-extrabold text-[17px] leading-snug tracking-tight ${isDescriptionExpanded ? "mb-2" : "mb-0 truncate"
+              }`}
+          >
+            {video.title}
+          </h3>
+
+          {/* ─ Description + more/less toggle ─ */}
+          <div
+            onClick={() => setIsDescriptionExpanded((p) => !p)}
+            className="cursor-pointer pointer-events-auto mt-1"
+          >
+            {isDescriptionExpanded ? (
+              <>
+                <p className="text-white/80 text-[13px] leading-relaxed">
+                  {video.description}
+                </p>
+                <span className="text-white/50 text-[12px] font-bold mt-1 inline-block">less</span>
+              </>
+            ) : (
+              <span className="text-white/55 text-[12px] font-bold">more</span>
+            )}
           </div>
         </div>
-        <div className="flex-shrink-0 ml-3">
-          <ControlPanel video={video} isMuted={isMuted} onMuteToggle={toggleMute} />
+
+        {/* ── DOMAIN NAME ── */}
+        <div className="w-full flex justify-center pb-1.5 pointer-events-none">
+          <span className="text-white/40 text-[10px] font-semibold tracking-wider">
+            {video.domain}
+          </span>
+        </div>
+
+        {/* ── TIMELINE — pinned to absolute bottom edge ── */}
+        <div className="w-full" style={{ zIndex: 50 }}>
+          <TimelineBar
+            progress={progress}
+            duration={duration}
+            onSeek={handleSeek}
+            onSeekStart={handleSeekStart}
+            onSeekEnd={handleSeekEnd}
+          />
         </div>
       </div>
     </div>

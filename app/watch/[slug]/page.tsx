@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { headers } from "next/headers"
 import { VideoFeed } from "../components/video-feed"
 import type { ApiVideo, Video } from "../types"
+import type { Metadata, ResolvingMetadata } from "next"
 
 
 async function getDomainName(mode: "subdomain" | "full" = "subdomain"): Promise<string> {
@@ -17,7 +18,7 @@ async function getDomainName(mode: "subdomain" | "full" = "subdomain"): Promise<
     /^\[?[a-fA-F0-9:]+\]?$/.test(host)
 
   if (IS_LOCAL || IS_IP) {
-    return mode === "full" ? host : "pannanews.com"
+    return mode === "full" ? host : "digitaldesknews.com"
   }
 
   if (mode === "full") {
@@ -59,7 +60,7 @@ async function getVideos(slug: string, domainName: string): Promise<Video[]> {
       return []
     }
 
-    return data.map((apiVideo) => ({
+    return data.map((apiVideo: any) => ({
       id: apiVideo.slug,
       title: apiVideo.story_title,
       description: apiVideo.story_description,
@@ -68,10 +69,54 @@ async function getVideos(slug: string, domainName: string): Promise<Video[]> {
       reporterName: apiVideo.reporter_name,
       channelName: apiVideo.channel_name,
       domain: fullDomain,
+      thumbnail: apiVideo.story_thumbnail,
+      favicon: apiVideo.favicon,
     }))
   } catch (error) {
     console.error("Failed to fetch videos:", error)
     return []
+  }
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> },
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { slug } = await params
+  const domainName = await getDomainName('subdomain')
+  const videos = await getVideos(slug, domainName)
+
+  if (!videos.length) {
+    return {
+      title: 'Story Not Found',
+    }
+  }
+
+  const video = videos.find(v => v.slug === slug) || videos[0]
+  
+  const previousImages = (await parent).openGraph?.images || []
+  const images = video.thumbnail ? [video.thumbnail, ...previousImages] : previousImages
+
+  return {
+    title: video.title,
+    description: video.description,
+    openGraph: {
+      title: video.title,
+      description: video.description,
+      images,
+      type: 'video.other',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: video.title,
+      description: video.description,
+      images,
+    },
+    icons: video.favicon ? {
+      icon: video.favicon,
+      shortcut: video.favicon,
+      apple: video.favicon,
+    } : undefined,
   }
 }
 

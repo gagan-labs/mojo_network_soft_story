@@ -22,6 +22,7 @@ export function VideoFeed({ videos: initialVideos, initialSlug, domainName }: Vi
   const [hasMoreStories, setHasMoreStories] = useState(true)
   const [showEndMessage, setShowEndMessage] = useState(false)
   const [messageShownForCurrentVisit, setMessageShownForCurrentVisit] = useState(false)
+  const [isUiHidden, setIsUiHidden] = useState(false)
 
   const [activeIndex, setActiveIndex] = useState(() => {
     if (initialSlug) {
@@ -190,22 +191,27 @@ export function VideoFeed({ videos: initialVideos, initialSlug, domainName }: Vi
           className="video-container h-[100dvh] w-full snap-start snap-always flex items-center justify-center relative"
         >
           <div className="relative h-full w-full md:w-auto md:h-full md:max-h-[95dvh] md:aspect-[9/16] md:rounded-2xl overflow-hidden md:shadow-2xl bg-black">
-            <VideoPlayer video={video} isActive={index === activeIndex} />
+            <VideoPlayer 
+              video={video} 
+              isActive={index === activeIndex} 
+              isUiHidden={isUiHidden} 
+              onToggleUiHidden={() => setIsUiHidden(prev => !prev)} 
+            />
             {index === activeIndex && isLoadingMore && (
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-40">
+              <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-50">
                 <div
-                  className="bg-white backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2"
+                  className="bg-black/70 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 flex items-center gap-2"
                   style={{ minWidth: "max-content" }}
                 >
-                  <Loader2 className="w-4 h-4 animate-spin text-black" />
-                  <span className="text-black text-sm">Loading More Stories</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span className="text-white text-xs font-semibold">Loading More Stories</span>
                 </div>
               </div>
             )}
             {index === videos.length - 1 && !hasMoreStories && showEndMessage && (
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-40">
-                <div className="bg-white backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
-                  <span className="text-black text-sm">No More Stories</span>
+              <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-50">
+                <div className="bg-black/70 backdrop-blur-md border border-white/15 rounded-full px-4 py-2">
+                  <span className="text-white text-xs font-semibold">You're all caught up</span>
                 </div>
               </div>
             )}
