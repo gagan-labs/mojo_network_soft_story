@@ -8,6 +8,8 @@ export interface ApiVideo {
   reporter_name: string
   channel_name: string
   domain: string
+  story_thumbnail?: string
+  favicon?: string | null
 }
 
 // The structure of the video data used by our components
@@ -20,4 +22,6 @@ export interface Video {
   reporterName: string
   channelName: string
   domain: string
+  thumbnail?: string
+  favicon?: string | null
 }
