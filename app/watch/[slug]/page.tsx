@@ -62,6 +62,7 @@ async function getVideos(slug: string, domainName: string): Promise<Video[]> {
 
     return data.map((apiVideo: any) => ({
       id: apiVideo.slug,
+      storyId: apiVideo.id,
       title: apiVideo.story_title,
       description: apiVideo.story_description,
       slug: apiVideo.slug,
