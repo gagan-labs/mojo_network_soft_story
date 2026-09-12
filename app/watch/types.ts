@@ -15,6 +15,7 @@ export interface ApiVideo {
 // The structure of the video data used by our components
 export interface Video {
   id: string // Using slug for unique ID in the app
+  storyId?: number
   title: string
   description: string
   slug: string

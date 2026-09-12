@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Play, Loader2, ArrowLeft, Volume2, VolumeX, ChevronDown, Maximize, Minimize } from "lucide-react"
+import { Play, Loader2, ArrowLeft, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
 import { DoubleTap } from "./double-tap"
 import { TimelineBar } from "./timeline-bar"
 import { ShareButton } from "./share-button"
+import { queueStoryView, flushStoryViews } from "../utils/softStoryTracker"
 import type { Video } from "../types"
 
 interface VideoPlayerProps {
@@ -17,6 +18,7 @@ interface VideoPlayerProps {
 export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const wasPlayingRef = useRef(false)
+  const watchStartTimeRef = useRef<number | null>(null)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -25,6 +27,53 @@ export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: V
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
+
+  // ── VIEW & WATCH DURATION TRACKING ──
+  useEffect(() => {
+    if (isActive) {
+      // 1. Immediately log initial view event
+      queueStoryView({
+        story_id: video.storyId,
+        slug: video.slug,
+        watch_time: 1,
+        domain_name: video.domain,
+      })
+
+      // 2. Start timer to measure watch duration
+      watchStartTimeRef.current = Date.now()
+    } else {
+      // 3. When scrolling away from this story, capture the accumulated time spent
+      if (watchStartTimeRef.current) {
+        const elapsedSeconds = Math.round((Date.now() - watchStartTimeRef.current) / 1000)
+        if (elapsedSeconds > 1) {
+          queueStoryView({
+            story_id: video.storyId,
+            slug: video.slug,
+            watch_time: elapsedSeconds - 1, // subtract initial 1 second already tracked
+            domain_name: video.domain,
+          })
+        }
+        watchStartTimeRef.current = null
+      }
+    }
+
+    return () => {
+      // Flush on unmount
+      if (watchStartTimeRef.current) {
+        const elapsedSeconds = Math.round((Date.now() - watchStartTimeRef.current) / 1000)
+        if (elapsedSeconds > 1) {
+          queueStoryView({
+            story_id: video.storyId,
+            slug: video.slug,
+            watch_time: elapsedSeconds - 1,
+            domain_name: video.domain,
+          })
+        }
+        watchStartTimeRef.current = null
+        flushStoryViews()
+      }
+    }
+  }, [isActive, video.storyId, video.slug, video.domain])
 
   useEffect(() => {
     let timer: NodeJS.Timeout
@@ -141,8 +190,6 @@ export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: V
     window.location.href = window.location.origin
   }
 
-  const toggleDescription = () => setIsDescriptionExpanded((prev) => !prev)
-
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
 
@@ -151,7 +198,7 @@ export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: V
         <video
           ref={videoRef}
           src={video.src}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
           loop
           autoPlay
           playsInline
@@ -250,7 +297,7 @@ export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: V
       {/* ── BOTTOM INFO PANEL ── */}
       <div
         className={`absolute bottom-0 left-0 right-0 flex flex-col transition-opacity duration-300 ${isUiHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        style={{ zIndex: 30 }}
+        style={{ zIndex: 30, paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {/* Info content — sits above timeline */}
         <div className="px-4 pb-0 pr-16">

@@ -62,6 +62,7 @@ async function getVideos(slug: string, domainName: string): Promise<Video[]> {
 
     return data.map((apiVideo: any) => ({
       id: apiVideo.slug,
+      storyId: apiVideo.id,
       title: apiVideo.story_title,
       description: apiVideo.story_description,
       slug: apiVideo.slug,
@@ -139,7 +140,7 @@ export default async function SoftStoryPage({ params }: { params: Promise<{ slug
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-900">
+    <main className="h-[100dvh] w-full bg-black overflow-hidden">
       <VideoFeed videos={videos} initialSlug={slug} domainName={domainName} />
     </main>
   )

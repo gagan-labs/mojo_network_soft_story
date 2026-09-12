@@ -69,6 +69,7 @@ export function VideoFeed({ videos: initialVideos, initialSlug, domainName }: Vi
           .filter((apiVideo: ApiVideo) => !existingSlugs.has(apiVideo.slug))
           .map((apiVideo: ApiVideo) => ({
             id: apiVideo.slug,
+            storyId: apiVideo.id,
             title: apiVideo.story_title,
             description: apiVideo.story_description,
             slug: apiVideo.slug,
@@ -76,6 +77,8 @@ export function VideoFeed({ videos: initialVideos, initialSlug, domainName }: Vi
             reporterName: apiVideo.reporter_name,
             channelName: apiVideo.channel_name,
             domain: domainName,
+            thumbnail: apiVideo.story_thumbnail,
+            favicon: apiVideo.favicon,
           }))
 
         if (newVideos.length === 0) {
