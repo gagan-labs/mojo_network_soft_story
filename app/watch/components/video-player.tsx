@@ -151,7 +151,7 @@ export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: V
         <video
           ref={videoRef}
           src={video.src}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
           loop
           autoPlay
           playsInline
@@ -250,7 +250,7 @@ export function VideoPlayer({ video, isActive, isUiHidden, onToggleUiHidden }: V
       {/* ── BOTTOM INFO PANEL ── */}
       <div
         className={`absolute bottom-0 left-0 right-0 flex flex-col transition-opacity duration-300 ${isUiHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        style={{ zIndex: 30 }}
+        style={{ zIndex: 30, paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {/* Info content — sits above timeline */}
         <div className="px-4 pb-0 pr-16">
